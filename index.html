@@ -1,134 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>JWT Decoder & Validator</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', sans-serif;
-      background-color: #f0f2f5;
-      margin: 0;
-      padding: 30px;
-      max-width: 800px;
-      margin: auto;
-    }
+    <meta charset="UTF-8"/>
+    <title>JWT Decoder & Validator</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f0f2f5;
+            padding: 30px;
+            max-width: 800px;
+            margin: auto;
+        }
 
-    h1 {
-      text-align: center;
-      color: #333;
-    }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
 
-    textarea, input {
-      width: 100%;
-      padding: 10px;
-      font-size: 1em;
-      margin-top: 10px;
-      box-sizing: border-box;
-      font-family: monospace;
-    }
+        textarea, input {
+            width: 100%;
+            padding: 10px;
+            font-size: 1em;
+            margin-top: 10px;
+            box-sizing: border-box;
+            font-family: monospace;
+        }
 
-    button {
-      margin-top: 15px;
-      padding: 10px 20px;
-      font-size: 1em;
-      background-color: #4CAF50;
-      color: white;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-    }
+        button {
+            margin-top: 15px;
+            padding: 10px 20px;
+            font-size: 1em;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
 
-    button:hover {
-      background-color: #45a049;
-    }
+        button:hover {
+            background-color: #45a049;
+        }
 
-    .section {
-      background-color: white;
-      padding: 15px;
-      margin-top: 20px;
-      border-radius: 6px;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
+        .section {
+            background-color: white;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 6px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
 
-    pre {
-      background: #f8f8f8;
-      padding: 10px;
-      border-radius: 4px;
-      overflow-x: auto;
-    }
+        pre {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
 
-    .status {
-      margin-top: 10px;
-      font-weight: bold;
-    }
+        .status {
+            margin-top: 10px;
+            font-weight: bold;
+        }
 
-    .valid {
-      color: green;
-    }
-
-    .invalid {
-      color: red;
-    }
-
-    .token-input-wrapper {
-  position: relative;
-  font-family: monospace;
-  line-height: 1.5;
-}
-
-#highlight {
-  position: absolute;
-  top: 0;
-  left: 0;
-  padding: 8px;
-  width: 100%;
-  height: 100%;
-  white-space: pre-wrap;
-  word-break: break-word;
-  pointer-events: none;
-  color: transparent;
-  z-index: 0;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-}
-
-#jwtInput {
-  position: relative;
-  background: transparent;
-  color: black;
-  border: 1px solid #ccc;
-  border-radius: 5px;
-  padding: 8px;
-  width: 100%;
-  height: 100px;
-  font-family: monospace;
-  line-height: 1.5;
-  z-index: 1;
-  resize: vertical;
-}
-  </style>
+        .jwt-editor {
+            width: 100%;
+            max-width: 100%;
+            min-height: 100px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.5;
+            background-color: #fff;
+            outline: none;
+            box-sizing: border-box;
+        }
+    </style>
 </head>
 <body>
 
-  <h1>JWT Decoder & Validator</h1>
+<h1>JWT Decoder & Validator</h1>
 
-  <div class="section">
-    <label for="jwtInput">JWT Token:</label>
-    <div class="token-input-wrapper">
-      <div id="highlight"></div>
-      <textarea id="jwtInput" placeholder="Paste your JWT here..."></textarea>
-    </div>
-    
+<div class="section">
+    <label for="jwtEditor">JWT Token:</label>
+    <div contenteditable="true" id="jwtEditor" class="jwt-editor" spellcheck="false" oninput="highlightJWT()"></div>
+
     <label for="secretInput">Secret (optional, for HS256 validation):</label>
     <input id="secretInput" type="text" placeholder="Enter secret..."/>
 
     <button onclick="decodeJWT()">Decode & Validate</button>
 
     <div id="validationStatus" class="status"></div>
-  </div>
+</div>
 
-  <div class="section">
+<div class="section">
     <h2>Header</h2>
     <pre id="header"></pre>
 
@@ -137,111 +103,113 @@
 
     <h2>Signature</h2>
     <pre id="signature"></pre>
-  </div>
+</div>
 
-  <script>
-    document.getElementById('jwtInput').addEventListener('input', updateHighlight);
-
-    /*
-    document.getElementById('jwtInput').addEventListener('input', () => {
-      updateHighlight();
-      decodeJWT();
-    });
-    */
-    
-    function updateHighlight() {
-      const input = document.getElementById('jwtInput').value.trim();
-      const highlight = document.getElementById('highlight');
-      const parts = input.split('.');
-    
-      if (parts.length === 3) {
-        const [header, payload, signature] = parts.map(escapeHtml);
-        highlight.innerHTML = `
-          <span style="background-color: #ffecec">${header}</span>.
-          <span style="background-color: #eaffea">${payload}</span>.
-          <span style="background-color: #e6f0ff">${signature}</span>
-        `;
-      } else {
-        highlight.textContent = escapeHtml(input); // fallback if token is invalid
-      }
-    }
-    
-    // Escape function to prevent HTML injection
-    function escapeHtml(str) {
-      return str
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;');
-    }
-    
+<script>
     function decodeBase64Url(str) {
-      str = str.replace(/-/g, '+').replace(/_/g, '/');
-      while (str.length % 4 !== 0) str += '=';
-      return atob(str);
+        str = str.replace(/-/g, '+').replace(/_/g, '/');
+        while (str.length % 4 !== 0) str += '=';
+        return atob(str);
     }
 
     async function validateSignature(headerB64, payloadB64, signatureB64, secret) {
-      const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
-      const keyData = new TextEncoder().encode(secret);
+        const data = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
+        const keyData = new TextEncoder().encode(secret);
 
-      const key = await crypto.subtle.importKey(
-        'raw',
-        keyData,
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['verify']
-      );
+        const key = await crypto.subtle.importKey(
+            'raw',
+            keyData,
+            {name: 'HMAC', hash: 'SHA-256'},
+            false,
+            ['verify']
+        );
 
-      const signature = Uint8Array.from(atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        //const signature = Uint8Array.from(atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+        const signatureStr = atob(signatureB64.replace(/-/g, '+').replace(/_/g, '/'));
+        const signature = Uint8Array.from([...signatureStr].map(c => c.charCodeAt(0)));
 
-      return await crypto.subtle.verify('HMAC', key, signature, data);
+        return await crypto.subtle.verify('HMAC', key, signature, data);
     }
 
     async function decodeJWT() {
-      const jwt = document.getElementById('jwtInput').value.trim();
-      const secret = document.getElementById('secretInput').value.trim();
-      const parts = jwt.split('.');
+        const jwt = document.getElementById('jwtEditor').innerText.trim();
+        const secret = document.getElementById('secretInput').value.trim();
+        const parts = jwt.split('.');
 
-      document.getElementById('validationStatus').textContent = '';
-      document.getElementById('header').textContent = '';
-      document.getElementById('payload').textContent = '';
-      document.getElementById('signature').textContent = '';
+        document.getElementById('validationStatus').textContent = '';
+        document.getElementById('header').textContent = '';
+        document.getElementById('payload').textContent = '';
+        document.getElementById('signature').textContent = '';
 
-      if (parts.length !== 3) {
-        document.getElementById('validationStatus').textContent = 'Invalid JWT format';
-        document.getElementById('validationStatus').className = 'status invalid';
-        return;
-      }
-
-      try {
-        const [headerB64, payloadB64, signatureB64] = parts;
-        const headerJSON = decodeBase64Url(headerB64);
-        const payloadJSON = decodeBase64Url(payloadB64);
-
-        const header = JSON.parse(headerJSON);
-        const payload = JSON.parse(payloadJSON);
-
-        document.getElementById('header').textContent = JSON.stringify(header, null, 2);
-        document.getElementById('payload').textContent = JSON.stringify(payload, null, 2);
-        document.getElementById('signature').textContent = signatureB64;
-
-        if (secret && header.alg === 'HS256') {
-          const valid = await validateSignature(headerB64, payloadB64, signatureB64, secret);
-          document.getElementById('validationStatus').textContent = valid ? '✅ Signature is valid' : '❌ Signature is invalid';
-          document.getElementById('validationStatus').className = 'status ' + (valid ? 'valid' : 'invalid');
-        } else if (secret && header.alg !== 'HS256') {
-          document.getElementById('validationStatus').textContent = `Validation for '${header.alg}' not supported in browser`;
-          document.getElementById('validationStatus').className = 'status invalid';
-        } else {
-          document.getElementById('validationStatus').textContent = '⚠️ No validation performed (no secret provided)';
-          document.getElementById('validationStatus').className = 'status';
+        if (parts.length !== 3) {
+            document.getElementById('validationStatus').textContent = 'Invalid JWT format';
+            document.getElementById('validationStatus').className = 'status invalid';
+            return;
         }
 
-      } catch (e) {
-        document.getElementById('validationStatus').textContent = 'Error decoding JWT: ' + e.message;
-        document.getElementById('validationStatus').className = 'status invalid';
-      }
+        try {
+            const [headerB64, payloadB64, signatureB64] = parts;
+            const headerJSON = decodeBase64Url(headerB64);
+            const payloadJSON = decodeBase64Url(payloadB64);
+
+            const header = JSON.parse(headerJSON);
+            const payload = JSON.parse(payloadJSON);
+
+            document.getElementById('header').textContent = JSON.stringify(header, null, 2);
+            document.getElementById('payload').textContent = JSON.stringify(payload, null, 2);
+            document.getElementById('signature').textContent = signatureB64;
+
+            if (secret && header.alg === 'HS256') {
+                const valid = await validateSignature(headerB64, payloadB64, signatureB64, secret);
+                document.getElementById('validationStatus').textContent = valid ? '✅ Signature is valid' : '❌ Signature is invalid';
+                document.getElementById('validationStatus').className = 'status ' + (valid ? 'valid' : 'invalid');
+            } else if (secret && header.alg !== 'HS256') {
+                document.getElementById('validationStatus').textContent = `Validation for '${header.alg}' not supported in browser`;
+                document.getElementById('validationStatus').className = 'status invalid';
+            } else {
+                document.getElementById('validationStatus').textContent = '⚠️ No validation performed (no secret provided)';
+                document.getElementById('validationStatus').className = 'status';
+            }
+
+        } catch (e) {
+            document.getElementById('validationStatus').textContent = 'Error decoding JWT: ' + e.message;
+            document.getElementById('validationStatus').className = 'status invalid';
+        }
     }
-  </script>
+
+    function highlightJWT() {
+        const editor = document.getElementById('jwtEditor');
+        const raw = editor.innerText.trim();
+        const parts = raw.split('.');
+
+        if (parts.length === 3) {
+            const [header, payload, signature] = parts.map(part =>
+                part.replace(/</g, '&lt;').replace(/>/g, '&gt;')
+            );
+
+            editor.innerHTML =
+                `<span style="color: red">${header}</span>` +
+                '.' +
+                `<span style="color: green">${payload}</span>` +
+                '.' +
+                `<span style="color: blue">${signature}</span>`;
+
+            placeCaretAtEnd(editor);
+        } else {
+            document.getElementById('headerOutput').textContent = '—';
+            document.getElementById('payloadOutput').textContent = '—';
+        }
+    }
+    
+    function placeCaretAtEnd(el) {
+        el.focus();
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.selectNodeContents(el);
+        range.collapse(false);
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+</script>
 </body>
 </html>
